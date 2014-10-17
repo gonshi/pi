@@ -201,7 +201,8 @@
     context.fill();
   };
 
-  Canvas.prototype.drawText = function( x, y, text, rgb ){
+  Canvas.prototype.drawText = function( x, y, text, font_size, rgb ){
+    context.font = font_size + 'px "Anonymous Pro"';
     context.fillStyle = rgb;
     context.fillText( text, x, y );
   };
@@ -299,7 +300,8 @@
 ( function( global, doc, $, ns, undefined ){
   'use strict';
   ns = ns || {};
-  global.audio = true;
+  global.IS_PLAYAUDIO = false;
+  global.IS_DRAWCODE = false;
   var total_scroll = 0;
   var context_width;
   var context_height;
@@ -319,6 +321,7 @@
     var canvas = ns.Canvas.getInstance();
     var audio = ns.Audio.getInstance();
     var ellipse_r = 180;
+    var bigFont_ratio = 1.5;
 
     resizeHandler.listen( 'RESIZE', function( width, height ){
       context_width = width;
@@ -326,9 +329,17 @@
       canvas.resetContext( width, height );
     });
 
-    $( window ).on( 'click', function(){
-      global.audio = !global.audio;
-    } );
+    $( global ).on( 'keypress', function( event ) {
+      if ( ( event.which && event.which === 13 ) || 
+           ( event.keyCode && event.keyCode === 13 ) ) {
+             if ( !global.IS_DRAWCODE ){
+               global.IS_DRAWCODE = true;
+             }
+             else if ( !global.IS_PLAYAUDIO ){
+               global.IS_PLAYAUDIO = true;
+             }
+      }
+    });
 
     $( document ).on( 'mousewheel', function( event ){
       var colorCode;
@@ -347,7 +358,7 @@
       /*
       napierCode = ( ns.NAPIER.slice( readPieFrom,
           readPieFrom + COLORCODE_LENGTH ) );*/
-      if( global.audio ){
+      if( global.IS_PLAYAUDIO ){
         audio.playFreq( colorCode / 200 );
       }
       //audio.playFreq( napierCode / 200 );
@@ -372,16 +383,29 @@
 
       // draw the whole text of PI
       canvas.drawText( context_width / 2 - total_scroll,
-        context_height / 2, ns.PI, 'rgb( 0, 0, 0 )' ); 
+        context_height / 2, /* text = */ ns.PI,
+        /* font size = */ 128, 'rgb( 0, 0, 0 )' ); 
 
-      // draw the whole text of PI
+      // draw the colorCode by the color
+      // at the original position 
       canvas.drawText(
         /* start X of colorCode area = */
         context_width / 2 - total_scroll + 
         ( FONT_WIDTH * readPieFrom ),
         context_height / 2,
-        /* text to be drawn = */ colorCode,
-        /* rgb to be drawn = */ rgb );
+        /* text = */ colorCode,
+        /* font size = */ 128,
+        /* rgb = */ rgb );
+
+      // draw the colorCode at the bottom 
+      if ( global.IS_DRAWCODE ){
+        canvas.drawText(
+          context_width / 2 - ( FONT_WIDTH * bigFont_ratio * 3.5 ),
+          context_height / 2 + ( ellipse_r + FONT_HEIGHT ),
+          /* text = */ '#' + colorCode,
+          /* font size = */ 128 * bigFont_ratio,
+          /* rgb = */ rgb );
+      }
     });
 
   });
